@@ -34,3 +34,19 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/generated/     # Generated files
+/node_modules/  # Node.js modules
+yarn.lock       # Yarn lock file
+npm-shrinkwrap.json # NPM shrinkwrap file
+/dist/          # Distribution files
+/build/         # Build output
+/out/           # Output files
+.tmp/           # Temporary files
+.cache/         # Cache files
+*.log           # Log files
+/logs/          # Log directory
+
+
+
+
