@@ -1,29 +1,23 @@
 import { z } from "zod";
-import { Hono } from 'hono';
-import { cors } from 'hono/cors';
-import { db } from "@/db/drizzle";
-import { accounts, insertAccountSchema } from '@/db/schema';
+import { Hono } from 'hono'
+import {db} from "@/db/drizzle"
+import { accounts, insertAccountSchema } from '@/db/schema'
 import { inArray, eq, and } from "drizzle-orm";
 import { clerkMiddleware, getAuth } from '@hono/clerk-auth';
+import { error } from 'console';
 import { zValidator } from '@hono/zod-validator';
 import { createId } from "@paralleldrive/cuid2";
-
-const app = new Hono();
-
-// Apply CORS middleware
-app.use('*', cors({
-    origin: 'https://transaction-manager-saas-app--ten.vercel.app', // Replace with your allowed origin
-    allowMethods: ['GET', 'POST', 'PATCH', 'DELETE'],
-    allowHeaders: ['Content-Type', 'Authorization'],
-}));
-
-app.get("/", 
+const app = new Hono()
+    .get("/", 
     clerkMiddleware(),
     async (c) => {
         const auth = getAuth(c);
 
-        if (!auth?.userId) {
-            return c.json({ error: "Unauthorized" }, 401);
+        if(!auth?.userId){
+            // throw new HTTPException(401, {
+            //     res: c.json({ error: "Unauthorized"}, 401),
+            // });
+            return c.json({ error: "Unauthorized"}, 401);
         }
         const data = await db
             .select({
@@ -32,11 +26,9 @@ app.get("/",
             })
             .from(accounts)
             .where(eq(accounts.userId, auth.userId));
-        return c.json({ data });
-    }
-);
-
-app.get("/:id",
+    return c.json({data})
+})
+.get("/:id",
     zValidator("param", z.object({
         id: z.string().optional(),
     })),
@@ -45,12 +37,13 @@ app.get("/:id",
         const auth = getAuth(c);
         const { id } = c.req.valid("param");
 
-        if (!id) {
-            return c.json({ error: "Missing id" }, 400);
+        if(!id) {
+            return c.json({error: "Missing id"}, 400);
         }
 
-        if (!auth?.userId) {
-            return c.json({ error: "UnAuthorized" }, 401);
+        if(!auth?.userId){
+            return c.json({error: "UnAuthorized"}, 401);
+
         }
 
         const [data] = await db
@@ -63,41 +56,42 @@ app.get("/:id",
                 and(
                     eq(accounts.userId, auth.userId),
                     eq(accounts.id, id)
+
                 ),
             );
 
-        if (!data) {
-            return c.json({ error: "Not found" }, 404);
-        }
+            if(!data){
+                return c.json({error:"Not found"}, 404 );
+            }
 
-        return c.json({ data });
+            console.log("ACCOUNTS",c.json({ data }));
+
+            return c.json({ data });
     }
-);
-
-app.post(
+)
+.post(
     "/",
     clerkMiddleware(),
     zValidator("json", insertAccountSchema.pick({
-        name: true,
+        name:true,
     })),
-    async (c) => {
+    async (c) => {{
         const auth = getAuth(c);
         const values = c.req.valid("json");
 
-        if (!auth?.userId) {
-            return c.json({ error: "Unauthorized" }, 401);
+        if(!auth?.userId){
+            return c.json({ error: "Unauthorized"}, 401);
         }
 
         const [data] = await db.insert(accounts).values({
             id: createId(),
             userId: auth.userId,
             ...values
-        }).returning();
-        return c.json({ data });
-    }
-);
-
-app.post(
+        }).returning()
+        return c.json({data});
+    }}
+)
+.post(
     "/bulk-delete",
     clerkMiddleware(),
     zValidator(
@@ -110,8 +104,8 @@ app.post(
         const auth = getAuth(c);
         const values = c.req.valid("json");
 
-        if (!auth?.userId) {
-            return c.json({ error: "UnAuthorized" }, 401);
+        if(!auth?.userId) {
+            return c.json({ error: "UnAuthorized"}, 401);
         }
 
         const data = await db
@@ -126,17 +120,17 @@ app.post(
                 id: accounts.id,
             });
 
-        return c.json({ data });
+            return c.json({ data });
     }
-);
 
-app.patch(
+)
+.patch(
     "/:id",
     clerkMiddleware(),
     zValidator("param",
-        z.object({
-            id: z.string().optional(),
-        }),
+    z.object({
+        id: z.string().optional(),
+    }),
     ),
     zValidator(
         "json",
@@ -146,15 +140,15 @@ app.patch(
     ),
     async (c) => {
         const auth = getAuth(c);
-        const { id } = c.req.valid("param");
+        const {id} = c.req.valid("param");
         const values = c.req.valid("json");
 
-        if (!id) {
-            return c.json({ error: "Missing id" }, 400);
+        if(!id) {
+            return c.json({error: "Missing id"}, 400);
         }
 
-        if (!auth?.userId) {
-            return c.json({ error: "UnAuthorized" }, 401);
+        if(!auth?.userId) {
+            return c.json({ error: "UnAuthorized"}, 401);
         }
 
         const [data] = await db
@@ -168,32 +162,32 @@ app.patch(
             )
             .returning();
 
-        if (!data) {
-            return c.json({ error: "Not found" }, 404);
-        }
+            if(!data){
+                return c.json({error:"Not found"}, 404 );
+            }
 
-        return c.json({ data });
+            return c.json({ data });
     }
-);
-
-app.delete(
+)
+.delete(
     "/:id",
     clerkMiddleware(),
     zValidator("param",
-        z.object({
-            id: z.string().optional(),
-        }),
+    z.object({
+        id: z.string().optional(),
+    }),
     ),
+   
     async (c) => {
         const auth = getAuth(c);
-        const { id } = c.req.valid("param");
+        const {id} = c.req.valid("param");
 
-        if (!id) {
-            return c.json({ error: "Missing id" }, 400);
+        if(!id) {
+            return c.json({error: "Missing id"}, 400);
         }
 
-        if (!auth?.userId) {
-            return c.json({ error: "UnAuthorized" }, 401);
+        if(!auth?.userId) {
+            return c.json({ error: "UnAuthorized"}, 401);
         }
 
         const [data] = await db
@@ -208,12 +202,12 @@ app.delete(
                 id: accounts.id,
             });
 
-        if (!data) {
-            return c.json({ error: "Not found" }, 404);
-        }
+            if(!data){
+                return c.json({error:"Not found"}, 404 );
+            }
 
-        return c.json({ data });
+            return c.json({ data });
     }
-);
+)
 
 export default app;
